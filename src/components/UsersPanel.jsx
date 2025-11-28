@@ -1,22 +1,23 @@
 import { useEffect, useState } from "react";
+import { Plus, Edit2, Power, Trash2 } from "lucide-react";
 
 export default function UsersPanel() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [editingUser, setEditingUser] = useState(null); // usuario para editar
-  const token = localStorage.getItem("token");
+  const [editingUser, setEditingUser] = useState(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const token = localStorage.getItem("access");
 
   useEffect(() => {
     fetchUsers();
-    // eslint-disable-next-line
   }, []);
 
   async function fetchUsers() {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch("http://127.0.0.1:8000/api/core/users/", {
+      const res = await fetch("http://127.0.0.1:8000/api/gyms/members/", {
         headers: {
           "Content-Type": "application/json",
           Authorization: token ? `Bearer ${token}` : "",
@@ -24,23 +25,23 @@ export default function UsersPanel() {
       });
 
       if (!res.ok) {
-        throw new Error("Error al obtener usuarios");
+        throw new Error("Error al obtener clientes");
       }
       const data = await res.json();
-      setUsers(data); // asume que API devuelve array
+      console.log("Clientes cargados:", data);
+      setUsers(data);
     } catch (err) {
       console.error(err);
-      setError(err.message || "Error al cargar usuarios");
+      setError(err.message || "Error al cargar clientes");
     } finally {
       setLoading(false);
     }
   }
 
   async function toggleActive(u) {
-    // ejemplo: PATCH /api/core/users/:id/ -> { is_active: !u.is_active }
     const updated = { is_active: !u.is_active };
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/core/users/${u.id}/`, {
+      const res = await fetch(`http://127.0.0.1:8000/api/gyms/members/${u.id}/`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -57,14 +58,31 @@ export default function UsersPanel() {
     }
   }
 
+  async function deleteUser(userId) {
+    if (!confirm("¿Estás seguro de eliminar este cliente?")) return;
+    
+    try {
+      const res = await fetch(`http://127.0.0.1:8000/api/gyms/members/${userId}/`, {
+        method: "DELETE",
+        headers: {
+          Authorization: token ? `Bearer ${token}` : "",
+        },
+      });
+      if (!res.ok) throw new Error("No se pudo eliminar");
+      setUsers((prev) => prev.filter((u) => u.id !== userId));
+    } catch (err) {
+      console.error(err);
+      alert("Error al eliminar cliente");
+    }
+  }
+
   function openEdit(u) {
     setEditingUser(u);
   }
 
   async function saveEdit(values) {
-    // values: { id, nombre, membresia, ... }
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/core/users/${values.id}/`, {
+      const res = await fetch(`http://127.0.0.1:8000/api/gyms/members/${values.id}/`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -82,101 +100,369 @@ export default function UsersPanel() {
     }
   }
 
+  async function createUser(values) {
+    try {
+      const res = await fetch("http://127.0.0.1:8000/api/gyms/members/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: token ? `Bearer ${token}` : "",
+        },
+        body: JSON.stringify(values),
+      });
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(JSON.stringify(errorData));
+      }
+      const newUser = await res.json();
+      setUsers((prev) => [...prev, newUser]);
+      setShowAddModal(false);
+    } catch (err) {
+      console.error(err);
+      alert("Error al crear cliente: " + err.message);
+    }
+  }
+
   return (
     <div className="bg-white shadow rounded-lg p-6">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-2xl font-bold">Gestión de Usuarios</h2>
-        <button onClick={fetchUsers} className="px-3 py-1 bg-blue-600 text-white rounded">Recargar</button>
+        <h2 className="text-2xl font-bold">Gestión de Clientes</h2>
+        <div className="flex gap-2">
+          <button onClick={fetchUsers} className="px-3 py-1 bg-gray-600 text-white rounded hover:bg-gray-700">
+            Recargar
+          </button>
+          <button 
+            onClick={() => setShowAddModal(true)} 
+            className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-1"
+          >
+            <Plus size={18} />
+            Nuevo Cliente
+          </button>
+        </div>
       </div>
 
-      {loading && <p>Cargando usuarios...</p>}
+      {loading && <p>Cargando clientes...</p>}
       {error && <p className="text-red-500">{error}</p>}
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-left">
-          <thead>
-            <tr className="bg-gray-100">
-              <th className="p-3">Nombre</th>
-              <th className="p-3">Estado</th>
-              <th className="p-3">Membresía</th>
-              <th className="p-3">Fecha inscripción</th>
-              <th className="p-3 text-center">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map((u) => (
-              <tr key={u.id} className="border-b hover:bg-gray-50">
-                <td className="p-3">{u.full_name || u.username || u.email}</td>
-                <td className={`p-3 font-semibold ${u.is_active ? "text-green-600" : "text-red-600"}`}>
-                  {u.is_active ? "Activo" : "Inactivo"}
-                </td>
-                <td className="p-3">{u.membership_type || "—"}</td>
-                <td className="p-3">{u.joined_at ? new Date(u.joined_at).toLocaleDateString() : "—"}</td>
-                <td className="p-3 text-center">
-                  <div className="flex items-center justify-center gap-2">
-                    <button onClick={() => openEdit(u)} className="px-3 py-1 bg-yellow-400 rounded text-sm">Editar</button>
-                    <button onClick={() => toggleActive(u)} className="px-3 py-1 bg-gray-200 rounded text-sm">
-                      {u.is_active ? "Desactivar" : "Activar"}
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+      {!loading && users.length === 0 && (
+        <div className="text-center py-12 bg-gray-50 rounded-lg">
+          <p className="text-gray-600 mb-4">No hay clientes registrados</p>
+          <button 
+            onClick={() => setShowAddModal(true)} 
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Registrar Primer Cliente
+          </button>
+        </div>
+      )}
 
-            {users.length === 0 && !loading && <tr><td className="p-3" colSpan="5">No hay usuarios</td></tr>}
-          </tbody>
-        </table>
-      </div>
+      {!loading && users.length > 0 && (
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="p-3">Nombre Completo</th>
+                <th className="p-3">Email</th>
+                <th className="p-3">Teléfono</th>
+                <th className="p-3">Membresía</th>
+                <th className="p-3">Fecha Registro</th>
+                <th className="p-3">Estado</th>
+                <th className="p-3 text-center">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.map((u) => (
+                <tr key={u.id} className="border-b hover:bg-gray-50">
+                  <td className="p-3 font-medium">{u.full_name || "—"}</td>
+                  <td className="p-3">{u.email || "—"}</td>
+                  <td className="p-3">{u.phone || "—"}</td>
+                  <td className="p-3">
+                    <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-sm">
+                      {u.membership_type || "Sin membresía"}
+                    </span>
+                  </td>
+                  <td className="p-3">
+                    {u.joined_at ? new Date(u.joined_at).toLocaleDateString('es-ES') : "—"}
+                  </td>
+                  <td className={`p-3 font-semibold ${u.is_active ? "text-green-600" : "text-red-600"}`}>
+                    {u.is_active ? "Activo" : "Inactivo"}
+                  </td>
+                  <td className="p-3 text-center">
+                    <div className="flex items-center justify-center gap-2">
+                      <button 
+                        onClick={() => openEdit(u)} 
+                        className="p-1.5 bg-yellow-100 text-yellow-700 rounded hover:bg-yellow-200"
+                        title="Editar"
+                      >
+                        <Edit2 size={16} />
+                      </button>
+                      <button 
+                        onClick={() => toggleActive(u)} 
+                        className="p-1.5 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                        title={u.is_active ? "Desactivar" : "Activar"}
+                      >
+                        <Power size={16} />
+                      </button>
+                      <button 
+                        onClick={() => deleteUser(u.id)} 
+                        className="p-1.5 bg-red-100 text-red-700 rounded hover:bg-red-200"
+                        title="Eliminar"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {editingUser && (
-        <EditUserModal user={editingUser} onClose={() => setEditingUser(null)} onSave={saveEdit} />
+        <EditUserModal 
+          user={editingUser} 
+          onClose={() => setEditingUser(null)} 
+          onSave={saveEdit} 
+        />
+      )}
+
+      {showAddModal && (
+        <AddUserModal 
+          onClose={() => setShowAddModal(false)} 
+          onSave={createUser} 
+        />
       )}
     </div>
   );
 }
 
-/* Modal simple para editar (puedes moverlo a su propio archivo) */
+/* Modal para EDITAR cliente */
 function EditUserModal({ user, onClose, onSave }) {
   const [form, setForm] = useState({
     id: user.id,
     full_name: user.full_name || "",
-    membership_type: user.membership_type || "",
-    is_active: user.is_active || false,
+    email: user.email || "",
+    phone: user.phone || "",
   });
 
   function handleChange(e) {
-    const { name, value, type, checked } = e.target;
+    const { 
+      name, value, type, checked } = e.target;
     setForm((f) => ({ ...f, [name]: type === "checkbox" ? checked : value }));
   }
 
-  function handleSubmit(e) {
-    e.preventDefault();
+  function handleSubmit() {
     onSave(form);
   }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
-        <h3 className="text-lg font-bold mb-4">Editar usuario</h3>
-        <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
+        <h3 className="text-lg font-bold mb-4">Editar Cliente</h3>
+        <div className="space-y-4">
           <div>
-            <label className="block text-sm">Nombre completo</label>
-            <input name="full_name" value={form.full_name} onChange={handleChange} className="w-full border p-2 rounded" />
-          </div>
-          <div>
-            <label className="block text-sm">Tipo de membresía</label>
-            <input name="membership_type" value={form.membership_type} onChange={handleChange} className="w-full border p-2 rounded" />
-          </div>
-          <div className="flex items-center gap-2">
-            <input id="is_active" type="checkbox" name="is_active" checked={form.is_active} onChange={handleChange} />
-            <label htmlFor="is_active" className="text-sm">Cuenta activa</label>
+            <label className="block text-sm mb-1">Nombre Completo</label>
+            <input 
+              name="full_name" 
+              value={form.full_name} 
+              onChange={handleChange} 
+              className="w-full border p-2 rounded"
+              placeholder="Juan Pérez"
+            />
           </div>
 
-          <div className="flex justify-end gap-2">
-            <button type="button" onClick={onClose} className="px-3 py-1 bg-gray-200 rounded">Cancelar</button>
-            <button type="submit" className="px-3 py-1 bg-blue-600 text-white rounded">Guardar</button>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm mb-1">Email</label>
+              <input 
+                type="email"
+                name="email" 
+                value={form.email} 
+                onChange={handleChange} 
+                className="w-full border p-2 rounded"
+                placeholder="juan@example.com"
+              />
+            </div>
+            <div>
+              <label className="block text-sm mb-1">Teléfono</label>
+              <input 
+                type="tel"
+                name="phone" 
+                value={form.phone} 
+                onChange={handleChange} 
+                className="w-full border p-2 rounded"
+                placeholder="3001234567"
+              />
+            </div>
           </div>
-        </form>
+          
+          <div>
+            <label className="block text-sm mb-1">Tipo de Membresía</label>
+            <select
+              name="membership_type" 
+              value={form.membership_type} 
+              onChange={handleChange} 
+              className="w-full border p-2 rounded"
+            >
+              <option value="Sin membresía">Sin membresía</option>
+              <option value="Mensual">Mensual</option>
+              <option value="Trimestral">Trimestral</option>
+              <option value="Semestral">Semestral</option>
+              <option value="Anual">Anual</option>
+            </select>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-4 border-t">
+            <button 
+              type="button" 
+              onClick={onClose} 
+              className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300"
+            >
+              Cancelar
+            </button>
+            <button 
+              onClick={handleSubmit}
+              className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              Guardar Cambios
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* Modal para AGREGAR nuevo cliente */
+function AddUserModal({ onClose, onSave }) {
+  const [form, setForm] = useState({
+    full_name: "",
+    email: "",
+    phone: "",
+    membership_type: "Sin membresía",
+    is_active: true,
+  });
+
+  const [errors, setErrors] = useState({});
+
+  function handleChange(e) {
+    const { name, value, type, checked } = e.target;
+    setForm((f) => ({ ...f, [name]: type === "checkbox" ? checked : value }));
+    if (errors[name]) {
+      setErrors((e) => ({ ...e, [name]: "" }));
+    }
+  }
+
+  function validateForm() {
+    const newErrors = {};
+    
+    if (!form.full_name.trim()) newErrors.full_name = "El nombre completo es obligatorio";
+    if (!form.email.trim()) newErrors.email = "El email es obligatorio";
+    if (!form.phone.trim()) newErrors.phone = "El teléfono es obligatorio";
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  }
+
+  function handleSubmit() {
+    if (!validateForm()) return;
+    onSave(form);
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
+        <h3 className="text-lg font-bold mb-4">Registrar Nuevo Cliente</h3>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm mb-1">
+              Nombre Completo <span className="text-red-500">*</span>
+            </label>
+            <input 
+              name="full_name" 
+              value={form.full_name} 
+              onChange={handleChange} 
+              className={`w-full border p-2 rounded ${errors.full_name ? "border-red-500" : ""}`}
+              placeholder="Juan Pérez García"
+            />
+            {errors.full_name && <p className="text-red-500 text-xs mt-1">{errors.full_name}</p>}
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm mb-1">
+                Email <span className="text-red-500">*</span>
+              </label>
+              <input 
+                type="email"
+                name="email" 
+                value={form.email} 
+                onChange={handleChange} 
+                className={`w-full border p-2 rounded ${errors.email ? "border-red-500" : ""}`}
+                placeholder="juan@example.com"
+              />
+              {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
+            </div>
+            <div>
+              <label className="block text-sm mb-1">
+                Teléfono <span className="text-red-500">*</span>
+              </label>
+              <input 
+                type="tel"
+                name="phone" 
+                value={form.phone} 
+                onChange={handleChange} 
+                className={`w-full border p-2 rounded ${errors.phone ? "border-red-500" : ""}`}
+                placeholder="3001234567"
+              />
+              {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm mb-1">Tipo de Membresía</label>
+            <select
+              name="membership_type" 
+              value={form.membership_type} 
+              onChange={handleChange} 
+              className="w-full border p-2 rounded"
+            >
+              <option value="Sin membresía">Sin membresía</option>
+              <option value="Mensual">Mensual</option>
+              <option value="Trimestral">Trimestral</option>
+              <option value="Semestral">Semestral</option>
+              <option value="Anual">Anual</option>
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <input 
+              id="is_active_new" 
+              type="checkbox" 
+              name="is_active" 
+              checked={form.is_active} 
+              onChange={handleChange}
+            />
+            <label htmlFor="is_active_new" className="text-sm">Cuenta activa</label>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-4 border-t">
+            <button 
+              type="button" 
+              onClick={onClose} 
+              className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300"
+            >
+              Cancelar
+            </button>
+            <button 
+              onClick={handleSubmit}
+              className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              Registrar Cliente
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
