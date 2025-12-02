@@ -162,6 +162,7 @@ export default function UsersPanel() {
             <thead>
               <tr className="bg-gray-100">
                 <th className="p-3">Nombre Completo</th>
+                <th className="p-3">Cedula</th>
                 <th className="p-3">Email</th>
                 <th className="p-3">Teléfono</th>
                 <th className="p-3">Membresía</th>
@@ -174,6 +175,7 @@ export default function UsersPanel() {
               {users.map((u) => (
                 <tr key={u.id} className="border-b hover:bg-gray-50">
                   <td className="p-3 font-medium">{u.full_name || "—"}</td>
+                  <td className="p-3">{u.cedula || "—"}</td>
                   <td className="p-3">{u.email || "—"}</td>
                   <td className="p-3">{u.phone || "—"}</td>
                   <td className="p-3">
@@ -238,21 +240,55 @@ export default function UsersPanel() {
 }
 
 /* Modal para EDITAR cliente */
+/* Modal para EDITAR cliente (corregido) */
 function EditUserModal({ user, onClose, onSave }) {
   const [form, setForm] = useState({
     id: user.id,
     full_name: user.full_name || "",
+    cedula: user.cedula || "",
     email: user.email || "",
     phone: user.phone || "",
+    membership_type: user.membership_type || "Sin membresía",
+    is_active: typeof user.is_active === "boolean" ? user.is_active : true,
   });
 
+  const [errors, setErrors] = useState({});
+
+  // Sincroniza el form cuando cambia el user prop
+  useEffect(() => {
+    setForm({
+      id: user.id,
+      full_name: user.full_name || "",
+      cedula: user.cedula || "",
+      email: user.email || "",
+      phone: user.phone || "",
+      membership_type: user.membership_type || "Sin membresía",
+      is_active: typeof user.is_active === "boolean" ? user.is_active : true,
+    });
+    setErrors({});
+  }, [user]);
+
   function handleChange(e) {
-    const { 
-      name, value, type, checked } = e.target;
+    const { name, value, type, checked } = e.target;
     setForm((f) => ({ ...f, [name]: type === "checkbox" ? checked : value }));
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: "" }));
+    }
+  }
+
+  function validateForm() {
+    const newErrors = {};
+    if (!form.full_name.trim()) newErrors.full_name = "El nombre completo es obligatorio";
+    if (!form.cedula.trim()) newErrors.cedula = "La cédula es obligatoria";
+    if (!form.email.trim()) newErrors.email = "El email es obligatorio";
+    if (!form.phone.trim()) newErrors.phone = "El teléfono es obligatorio";
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   }
 
   function handleSubmit() {
+    if (!validateForm()) return;
+    // onSave espera el objeto completo; aquí lo enviamos
     onSave(form);
   }
 
@@ -263,65 +299,92 @@ function EditUserModal({ user, onClose, onSave }) {
         <div className="space-y-4">
           <div>
             <label className="block text-sm mb-1">Nombre Completo</label>
-            <input 
-              name="full_name" 
-              value={form.full_name} 
-              onChange={handleChange} 
-              className="w-full border p-2 rounded"
+            <input
+              name="full_name"
+              value={form.full_name}
+              onChange={handleChange}
+              className={`w-full border p-2 rounded ${errors.full_name ? "border-red-500" : ""}`}
               placeholder="Juan Pérez"
             />
+            {errors.full_name && <p className="text-red-500 text-xs mt-1">{errors.full_name}</p>}
+          </div>
+
+          <div>
+            <label className="block text-sm mb-1">
+              Cédula <span className="text-red-500">*</span>
+            </label>
+            <input
+              name="cedula"
+              value={form.cedula}
+              onChange={handleChange}
+              className={`w-full border p-2 rounded ${errors.cedula ? "border-red-500" : ""}`}
+              placeholder="1234567890"
+            />
+            {errors.cedula && <p className="text-red-500 text-xs mt-1">{errors.cedula}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm mb-1">Email</label>
-              <input 
+              <input
                 type="email"
-                name="email" 
-                value={form.email} 
-                onChange={handleChange} 
-                className="w-full border p-2 rounded"
+                name="email"
+                value={form.email}
+                onChange={handleChange}
+                className={`w-full border p-2 rounded ${errors.email ? "border-red-500" : ""}`}
                 placeholder="juan@example.com"
               />
+              {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
             </div>
             <div>
               <label className="block text-sm mb-1">Teléfono</label>
-              <input 
+              <input
                 type="tel"
-                name="phone" 
-                value={form.phone} 
-                onChange={handleChange} 
-                className="w-full border p-2 rounded"
+                name="phone"
+                value={form.phone}
+                onChange={handleChange}
+                className={`w-full border p-2 rounded ${errors.phone ? "border-red-500" : ""}`}
                 placeholder="3001234567"
               />
+              {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
             </div>
           </div>
-          
+
           <div>
             <label className="block text-sm mb-1">Tipo de Membresía</label>
             <select
-              name="membership_type" 
-              value={form.membership_type} 
-              onChange={handleChange} 
+              name="membership_type"
+              value={form.membership_type}
+              onChange={handleChange}
               className="w-full border p-2 rounded"
             >
               <option value="Sin membresía">Sin membresía</option>
               <option value="Mensual">Mensual</option>
-              <option value="Trimestral">Trimestral</option>
-              <option value="Semestral">Semestral</option>
-              <option value="Anual">Anual</option>
+              <option value="Quincena">Quincena</option>
+              <option value="Semana">Semana</option>
             </select>
           </div>
 
+          <div className="flex items-center gap-2">
+            <input
+              id="is_active_edit"
+              type="checkbox"
+              name="is_active"
+              checked={!!form.is_active}
+              onChange={handleChange}
+            />
+            <label htmlFor="is_active_edit" className="text-sm">Cuenta activa</label>
+          </div>
+
           <div className="flex justify-end gap-2 pt-4 border-t">
-            <button 
-              type="button" 
-              onClick={onClose} 
+            <button
+              type="button"
+              onClick={onClose}
               className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300"
             >
               Cancelar
             </button>
-            <button 
+            <button
               onClick={handleSubmit}
               className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
             >
@@ -338,6 +401,7 @@ function EditUserModal({ user, onClose, onSave }) {
 function AddUserModal({ onClose, onSave }) {
   const [form, setForm] = useState({
     full_name: "",
+    cedula: "",
     email: "",
     phone: "",
     membership_type: "Sin membresía",
@@ -358,6 +422,7 @@ function AddUserModal({ onClose, onSave }) {
     const newErrors = {};
     
     if (!form.full_name.trim()) newErrors.full_name = "El nombre completo es obligatorio";
+    if (!form.cedula.trim()) newErrors.cedula = "La cédula es obligatoria";
     if (!form.email.trim()) newErrors.email = "El email es obligatorio";
     if (!form.phone.trim()) newErrors.phone = "El teléfono es obligatorio";
     
@@ -387,6 +452,20 @@ function AddUserModal({ onClose, onSave }) {
               placeholder="Juan Pérez García"
             />
             {errors.full_name && <p className="text-red-500 text-xs mt-1">{errors.full_name}</p>}
+          </div>
+
+          <div>
+            <label className="block text-sm mb-1">
+              Cédula <span className="text-red-500">*</span>
+            </label>
+            <input
+              name="cedula"
+              value={form.cedula}
+              onChange={handleChange}
+              className={`w-full border p-2 rounded ${errors.cedula ? "border-red-500" : ""}`}
+              placeholder="1234567890"
+            />
+            {errors.cedula && <p className="text-red-500 text-xs mt-1">{errors.cedula}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-4">

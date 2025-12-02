@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Swal from "sweetalert2";
 
 export default function LoginForm({ onLogin }) {
   const [username, setUsername] = useState("");
@@ -44,7 +45,12 @@ export default function LoginForm({ onLogin }) {
         localStorage.setItem("access", data.access);
         localStorage.setItem("refresh", data.refresh);
         onLogin(username);
-        alert("Inicio de sesión exitoso");
+         Swal.fire({
+        title: "¡Bienvenido!",
+        text: "Inicio de sesión exitoso",
+        icon: "success",
+        confirmButtonText: "Continuar",
+      });
       }
     } catch (err) {
       console.error(err);
@@ -181,7 +187,7 @@ export default function LoginForm({ onLogin }) {
             )}
 
             <button
-              type="button"
+              type="submit"
               onClick={handleSubmit}
               disabled={isLoading}
               className="w-full py-3 px-4 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"

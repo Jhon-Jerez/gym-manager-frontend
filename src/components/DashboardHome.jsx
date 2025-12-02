@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import Swal from "sweetalert2";
 
 export default function DashboardHome() {
   const [search, setSearch] = useState("");
@@ -7,6 +8,8 @@ export default function DashboardHome() {
   const [gymId, setGymId] = useState(null);
   const [stats, setStats] = useState(null);
   const [error, setError] = useState(null);
+ 
+
 
   // 1. Obtener gym_id desde el usuario autenticado
   useEffect(() => {
@@ -76,14 +79,51 @@ export default function DashboardHome() {
     fetchStats();
   }, [gymId]);
 
-  const handleSearch = (e) => {
+  // BUSCAR POR CÉDULA
+  const handleSearch = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
 
-    setTimeout(() => {
+    try {
+      const token = localStorage.getItem("access");
+      if (!token) throw new Error("No hay token. Inicia sesión.");
+
+      const response = await fetch(
+        `http://127.0.0.1:8000/api/gyms/buscar-miembro/?cedula=${search}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.detail || "Usuario no encontrado");
+      }
+
+      Swal.fire({
+        title: "Usuario encontrado",
+        html: `
+          <p><strong>Nombre:</strong> ${data.full_name}</p>
+          <p><strong>Cédula:</strong> ${data.cedula}</p>
+          <p><strong>Días restantes:</strong> ${data.dias_restantes ?? "N/A"}</p>
+          <p><strong>Fecha fin:</strong> ${data.membership_end ?? "N/A"}</p>
+          <p><strong>Estado:</strong> ${data.is_active ? "Activo" : "Inactivo"}</p>
+
+        `,
+        icon: "success",
+        confirmButtonText: "Aceptar"
+      });
+    } catch (err) {
+      setError(err.message);
+    } finally {
       setLoading(false);
-      alert(`Buscando usuario con cédula o huella: ${search}`);
-    }, 1500);
+    }
   };
 
   return (
@@ -91,6 +131,13 @@ export default function DashboardHome() {
       {/* Búsqueda */}
       <section className="bg-white shadow rounded-xl p-6">
         <h2 className="text-2xl font-bold mb-4 text-gray-800">Buscar Usuario</h2>
+
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-3">
+            <strong>Error: </strong> {error}
+          </div>
+        )}
+
         <form onSubmit={handleSearch} className="flex gap-4">
           <input
             type="text"
@@ -113,12 +160,6 @@ export default function DashboardHome() {
       <section>
         <h2 className="text-2xl font-bold mb-6 text-gray-800">Estadísticas Generales</h2>
 
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg">
-            <strong>Error: </strong> {error}
-          </div>
-        )}
-
         {!stats && !error ? (
           <p className="text-gray-500 text-center">Cargando estadísticas...</p>
         ) : stats ? (
@@ -126,12 +167,7 @@ export default function DashboardHome() {
             <StatCard title="Usuarios Totales" value={stats.total_clientes} color="bg-blue-500" />
             <StatCard title="Usuarios Activos" value={stats.clientes_activos} color="bg-green-500" />
             <StatCard title="Usuarios Presentes" value={stats.clientes_presentes} color="bg-orange-500" />
-            <StatCard 
-              title="Usuarios Inactivos" 
-              value={stats.inactivos}
-              color="bg-red-500" 
-            />
-
+            <StatCard title="Usuarios Inactivos" value={stats.inactivos} color="bg-red-500" />
           </div>
         ) : null}
       </section>
