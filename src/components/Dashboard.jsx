@@ -1,6 +1,7 @@
 import { useState } from "react";
 import UsersPanel from "./UsersPanel"; 
 import DashboardHome from "./DashboardHome";
+import Calendar from "./Calendar";
 
 
 
@@ -61,13 +62,13 @@ export default function Dashboard({ onLogout, user }) {
             </button>
 
             <button
-              onClick={() => setActiveSection("classes")}
+              onClick={() => setActiveSection("calendar")}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${
-                activeSection === "classes" ? "bg-gray-700" : "hover:bg-gray-700"
+                activeSection === "calendar" ? "bg-gray-700" : "hover:bg-gray-700"
               }`}
             >
               <span className="text-lg">📅</span>
-              <span>Clases</span>
+              <span>Calendario</span>
             </button>
 
             <button
@@ -97,7 +98,7 @@ export default function Dashboard({ onLogout, user }) {
           {activeSection === "overview" && <DashboardHome />}
           {activeSection === "users" && <UsersPanel />}
           {activeSection === "trainers" && <Placeholder title="Entrenadores" />}
-          {activeSection === "classes" && <Placeholder title="Clases" />}
+          {activeSection === "calendar" && <Calendar />}
           {activeSection === "payments" && <Placeholder title="Pagos" />}
           {activeSection === "reports" && <Placeholder title="Reportes" />}
         </main>

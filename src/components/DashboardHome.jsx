@@ -11,7 +11,6 @@ export default function DashboardHome() {
  
 
 
-  // 1. Obtener gym_id desde el usuario autenticado
   useEffect(() => {
     const fetchUser = async () => {
       try {
