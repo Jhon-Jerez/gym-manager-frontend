@@ -9,6 +9,7 @@ export default function Calendar() {
   const [eventTitle, setEventTitle] = useState("");
   const [eventDescription, setEventDescription] = useState("");
   const [selectedEvent, setSelectedEvent] = useState(null);
+  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'; // <--- ¡AÑADE ESTO!
 
   // Refs para controlar el tooltip
   const calendarRef = useRef(null);
@@ -284,9 +285,8 @@ export default function Calendar() {
     const formattedStartDate = formatDateForBackend(selectedDate);
 
     try {
-      const response = await fetch(`http://localhost:8000/api/calendario/events/${selectedEvent.id}/`, {
-        method: "PUT",
-        headers: {
+      const response = await fetch(`${API_BASE_URL}/api/calendario/events/`, {
+      headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
@@ -322,7 +322,7 @@ export default function Calendar() {
     const token = getAuthToken();
 
     try {
-      const response = await fetch(`http://localhost:8000/api/calendario/events/${selectedEvent.id}/`, {
+      const response = await fetch(`${API_BASE_URL}/api/calendario/events/${selectedEvent.id}/`, { 
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
@@ -414,7 +414,7 @@ export default function Calendar() {
               const token = getAuthToken();
 
               const res = await fetch(
-                "http://localhost:8000/api/calendario/events/",
+                `${API_BASE_URL}/api/calendario/events/`,
                 {
                   headers: {
                     "Content-Type": "application/json",

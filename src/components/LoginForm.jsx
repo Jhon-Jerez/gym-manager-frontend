@@ -5,6 +5,7 @@ export default function LoginForm({ onLogin }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'; // <-- ¡AÑADE ESTO!
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
@@ -21,7 +22,7 @@ export default function LoginForm({ onLogin }) {
     setIsLoading(true);
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/api/token/", {
+      const response = await fetch(`${API_BASE_URL}/api/token/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),

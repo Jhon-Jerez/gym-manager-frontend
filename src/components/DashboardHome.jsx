@@ -4,6 +4,7 @@ import Swal from "sweetalert2";
 export default function DashboardHome() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
+  
 
   const [gymId, setGymId] = useState(null);
   const [stats, setStats] = useState(null);
@@ -17,7 +18,7 @@ export default function DashboardHome() {
         const token = localStorage.getItem("access");
         if (!token) throw new Error("No hay token. Inicia sesión.");
 
-        const response = await fetch("http://127.0.0.1:8000/api/core/me/", {
+        const response = await fetch(`${API_BASE_URL}/api/core/me/`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -52,7 +53,7 @@ export default function DashboardHome() {
         const token = localStorage.getItem("access");
 
         const response = await fetch(
-          `http://127.0.0.1:8000/api/gyms/estadisticas/${gymId}/`,
+          `${API_BASE_URL}/api/gyms/estadisticas/${gymId}/`,
           {
             method: "GET",
             headers: {
@@ -89,7 +90,7 @@ export default function DashboardHome() {
       if (!token) throw new Error("No hay token. Inicia sesión.");
 
       const response = await fetch(
-        `http://127.0.0.1:8000/api/gyms/buscar-miembro/?cedula=${search}`,
+        `${API_BASE_URL}/api/gyms/buscar-miembro/?cedula=${search}`,
         {
           method: "GET",
           headers: {

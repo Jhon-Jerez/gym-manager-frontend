@@ -4,7 +4,7 @@ import { Plus, Edit2, Power, Trash2 } from "lucide-react";
 export default function UsersPanel() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState("");const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'; // <-- ¡AÑADE ESTO!
 
   // NUEVO: búsqueda
   const [search, setSearch] = useState("");
@@ -26,7 +26,7 @@ export default function UsersPanel() {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch("http://127.0.0.1:8000/api/gyms/members/", {
+      const res = await fetch(`${API_BASE_URL}/api/gyms/members/`, {
         headers: {
           "Content-Type": "application/json",
           Authorization: token ? `Bearer ${token}` : "",
@@ -49,7 +49,7 @@ export default function UsersPanel() {
   async function toggleActive(u) {
     const updated = { is_active: !u.is_active };
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/gyms/members/${u.id}/`, {
+      const res = await fetch(`${API_BASE_URL}/api/gyms/members/${u.id}/`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -70,7 +70,7 @@ export default function UsersPanel() {
     if (!confirm("¿Estás seguro de eliminar este cliente?")) return;
 
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/gyms/members/${userId}/`, {
+      const res = await fetch(`${API_BASE_URL}/api/gyms/members/${userId}/`, {
         method: "DELETE",
         headers: {
           Authorization: token ? `Bearer ${token}` : "",
@@ -90,7 +90,7 @@ export default function UsersPanel() {
 
   async function saveEdit(values) {
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/gyms/members/${values.id}/`, {
+      const res = await fetch(`${API_BASE_URL}/api/gyms/members/${values.id}/`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -110,7 +110,7 @@ export default function UsersPanel() {
 
   async function createUser(values) {
     try {
-      const res = await fetch("http://127.0.0.1:8000/api/gyms/members/", {
+      const res = await fetch(`${API_BASE_URL}/api/gyms/members/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
