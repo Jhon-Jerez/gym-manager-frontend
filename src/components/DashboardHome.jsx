@@ -5,6 +5,7 @@ export default function DashboardHome() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
   
+  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'; // <--- ¡AÑADE ESTO!
 
   const [gymId, setGymId] = useState(null);
   const [stats, setStats] = useState(null);

@@ -4,7 +4,8 @@ import { Plus, Edit2, Power, Trash2 } from "lucide-react";
 export default function UsersPanel() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'; // <-- ¡AÑADE ESTO!
+  const [error, setError] = useState("");
+  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'; // <-- ¡AÑADE ESTO!
 
   // NUEVO: búsqueda
   const [search, setSearch] = useState("");
